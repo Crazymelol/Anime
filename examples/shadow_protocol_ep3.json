@@ -1,0 +1,25 @@
+{
+  "series_title": "Shadow Protocol",
+  "total_episodes": 12,
+  "episode_number": 3,
+  "premise": "Kaito infiltrates a corporate server and finds evidence that the company has been running experiments on people with abilities like his.",
+  "tone": "dark",
+  "pacing": "fast, with a cliffhanger ending",
+  "total_minutes": 12,
+  "characters": [
+    {
+      "name": "Kaito",
+      "role": "main character",
+      "age": 17,
+      "brief": "a hacker who discovers he can manipulate digital reality with his mind",
+      "visual_description": "anime teen boy, dark messy hair, sharp eyes, black hoodie, fingerless gloves, sitting in dark server room, surrounded by blue holographic code and data streams, dramatic side lighting, deep shadows, Makoto Shinkai inspired",
+      "voice": "adam"
+    },
+    {
+      "name": "Narrator",
+      "role": "narrator",
+      "visual_description": null,
+      "voice": "antoni"
+    }
+  ]
+}
