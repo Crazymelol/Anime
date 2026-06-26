@@ -41,31 +41,35 @@ def generate_episode_audio(
     output_dir: Path,
     mock: bool = False,
     api_key: str | None = None,
-) -> list[Path]:
+) -> dict[int, list[Path]]:
+    """Returns {scene_number: [audio_path, ...]} in narration-then-dialogue order,
+    so callers (e.g. video assembly) don't have to reconstruct ordering from filenames.
+    """
     api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
     audio_dir = output_dir / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    written: list[Path] = []
+    audio_by_scene: dict[int, list[Path]] = {}
     for scene in scenes:
         scene_number = scene["scene_number"]
+        scene_paths: list[Path] = []
+        seq = 0
 
         for line in scene.get("narrator_lines", []):
-            written.append(
-                _synthesize_to_file(line, voice_id_for_character("Narrator", characters),
-                                    audio_dir / f"scene_{scene_number}_narrator_{len(written)}.mp3",
-                                    api_key, mock)
-            )
+            path = audio_dir / f"scene_{scene_number}_{seq:02d}_narrator.mp3"
+            scene_paths.append(_synthesize_to_file(line, voice_id_for_character("Narrator", characters),
+                                                    path, api_key, mock))
+            seq += 1
 
         for entry in scene.get("dialogue", []):
             voice_id = voice_id_for_character(entry["character"], characters)
-            written.append(
-                _synthesize_to_file(entry["line"], voice_id,
-                                    audio_dir / f"scene_{scene_number}_{entry['character'].lower()}_{len(written)}.mp3",
-                                    api_key, mock)
-            )
+            path = audio_dir / f"scene_{scene_number}_{seq:02d}_{entry['character'].lower()}.mp3"
+            scene_paths.append(_synthesize_to_file(entry["line"], voice_id, path, api_key, mock))
+            seq += 1
 
-    return written
+        audio_by_scene[scene_number] = scene_paths
+
+    return audio_by_scene
 
 
 def _synthesize_to_file(text: str, voice_id: str, path: Path, api_key: str | None, mock: bool) -> Path:

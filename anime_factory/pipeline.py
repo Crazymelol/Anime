@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 
 from anime_factory.config import VOICE_PRESETS
+from anime_factory.image_gen import generate_episode_images
 from anime_factory.image_prompts import build_episode_prompts
 from anime_factory.llm_client import LLMClient
 from anime_factory.script_writer import generate_episode_script
+from anime_factory.video_assembly import assemble_episode_video
 from anime_factory.voiceover import generate_episode_audio
 
 
@@ -20,7 +22,14 @@ def resolve_voice_ids(characters: list[dict]) -> list[dict]:
     return resolved
 
 
-def run_pipeline(episode_config: dict, output_dir: Path, mock: bool = False, skip_audio: bool = False) -> Path:
+def run_pipeline(
+    episode_config: dict,
+    output_dir: Path,
+    mock: bool = False,
+    skip_audio: bool = False,
+    skip_images: bool = False,
+    skip_video: bool = False,
+) -> Path:
     series_slug = episode_config["series_title"].lower().replace(" ", "_")
     episode_dir = output_dir / series_slug / f"episode_{episode_config['episode_number']}"
     episode_dir.mkdir(parents=True, exist_ok=True)
@@ -39,9 +48,19 @@ def run_pipeline(episode_config: dict, output_dir: Path, mock: bool = False, ski
         f"Scene {i + 1}: {p}" for i, p in enumerate(prompts)
     ))
 
-    audio_files: list[Path] = []
+    image_paths: list[Path] = []
+    if not skip_images:
+        image_paths = generate_episode_images(prompts, episode_dir, mock=mock)
+
+    audio_by_scene: dict[int, list[Path]] = {}
     if not skip_audio:
-        audio_files = generate_episode_audio(script["scenes"], characters, episode_dir, mock=mock)
+        audio_by_scene = generate_episode_audio(script["scenes"], characters, episode_dir, mock=mock)
+
+    video_path = None
+    if not skip_video and image_paths:
+        video_path = assemble_episode_video(
+            script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4", mock=mock
+        )
 
     manifest = {
         "series_title": episode_config["series_title"],
@@ -49,7 +68,9 @@ def run_pipeline(episode_config: dict, output_dir: Path, mock: bool = False, ski
         "episode_title": script.get("episode_title"),
         "scene_count": len(script["scenes"]),
         "image_prompts_file": "image_prompts.txt",
-        "audio_files": [str(p.relative_to(episode_dir)) for p in audio_files],
+        "image_files": [str(p.relative_to(episode_dir)) for p in image_paths],
+        "audio_files": [str(p.relative_to(episode_dir)) for paths in audio_by_scene.values() for p in paths],
+        "video_file": str(video_path.relative_to(episode_dir)) if video_path else None,
     }
     (episode_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
