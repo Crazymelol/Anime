@@ -29,6 +29,7 @@ def run_pipeline(
     skip_audio: bool = False,
     skip_images: bool = False,
     skip_video: bool = False,
+    captions: bool = True,
 ) -> Path:
     series_slug = episode_config["series_title"].lower().replace(" ", "_")
     episode_dir = output_dir / series_slug / f"episode_{episode_config['episode_number']}"
@@ -59,7 +60,8 @@ def run_pipeline(
     video_path = None
     if not skip_video and image_paths:
         video_path = assemble_episode_video(
-            script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4", mock=mock
+            script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4",
+            mock=mock, captions=captions,
         )
 
     manifest = {

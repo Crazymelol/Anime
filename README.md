@@ -14,8 +14,9 @@ Generates an anime episode end to end from a JSON config:
    using voice settings tuned for anime delivery (stability 0.35, similarity 0.85,
    style exaggeration 0.40, speaker boost on).
 5. **Video assembly** — ffmpeg turns each scene's image + voiceover into a slow
-   zoom clip, then concatenates all scenes into the finished vertical short
-   (`episode.mp4`).
+   zoom clip with burned-in captions (each spoken line timed across the scene),
+   then concatenates all scenes into the finished vertical short (`episode.mp4`).
+   Pass `--no-captions` to turn the on-screen text off.
 
 ## Setup
 

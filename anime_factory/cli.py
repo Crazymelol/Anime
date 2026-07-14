@@ -13,6 +13,7 @@ def main() -> None:
     parser.add_argument("--skip-audio", action="store_true", help="Skip voiceover generation entirely")
     parser.add_argument("--skip-images", action="store_true", help="Skip image generation (also skips video)")
     parser.add_argument("--skip-video", action="store_true", help="Skip final video assembly")
+    parser.add_argument("--no-captions", action="store_true", help="Don't burn on-screen captions into the video")
     args = parser.parse_args()
 
     episode_config = json.loads(args.config.read_text())
@@ -23,6 +24,7 @@ def main() -> None:
         skip_audio=args.skip_audio,
         skip_images=args.skip_images,
         skip_video=args.skip_video,
+        captions=not args.no_captions,
     )
     print(f"Episode written to {episode_dir}")
 
