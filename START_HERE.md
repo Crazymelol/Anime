@@ -109,9 +109,14 @@ Upload it anywhere.
 
 ## Changing the story
 
-Open `examples/shadow_protocol_ep3.json`. Change the words for **series_title**,
-**premise**, and the **characters** (names + what they look like). Keep the quote
-marks and commas where they are — just swap the words. Then run Step 6 again.
+1. Make a **copy** of `examples/shadow_protocol_ep3.json`.
+2. Rename the copy to exactly **`my_episode.json`** and put it in the main
+   project folder (next to the .command buttons).
+3. Open it and change the words for **series_title**, **premise**, and the
+   **characters** (names + what they look like). Keep the quote marks and
+   commas where they are — just swap the words.
+4. Double-click **Make Video** (or run Step 6 again). The buttons automatically
+   use `my_episode.json` when it exists — they'll say so at the top.
 
 ---
 

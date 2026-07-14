@@ -1,6 +1,7 @@
-"""Orchestrates script -> image prompts -> voiceover for one episode config."""
+"""Orchestrates script -> image prompts -> images -> voiceover -> video for one episode config."""
 
 import json
+import re
 from pathlib import Path
 
 from anime_factory.config import VOICE_PRESETS
@@ -8,8 +9,21 @@ from anime_factory.image_gen import generate_episode_images
 from anime_factory.image_prompts import build_episode_prompts
 from anime_factory.llm_client import LLMClient
 from anime_factory.script_writer import generate_episode_script
+from anime_factory.validation import (
+    canonicalize_script,
+    validate_api_keys,
+    validate_episode_config,
+    validate_script_voices,
+)
 from anime_factory.video_assembly import assemble_episode_video
 from anime_factory.voiceover import generate_episode_audio
+
+
+def series_slug(series_title: str) -> str:
+    """Filesystem-safe slug: apostrophes and other punctuation would otherwise
+    flow into ffmpeg concat lists and filtergraph paths."""
+    slug = re.sub(r"[^a-z0-9]+", "_", series_title.lower()).strip("_")
+    return slug or "series"
 
 
 def resolve_voice_ids(characters: list[dict]) -> list[dict]:
@@ -31,8 +45,15 @@ def run_pipeline(
     skip_video: bool = False,
     captions: bool = True,
 ) -> Path:
-    series_slug = episode_config["series_title"].lower().replace(" ", "_")
-    episode_dir = output_dir / series_slug / f"episode_{episode_config['episode_number']}"
+    # Fail on config/key problems BEFORE any paid API call.
+    validate_episode_config(episode_config)
+    if not mock:
+        validate_api_keys(skip_images=skip_images, skip_audio=skip_audio)
+
+    episode_dir = (
+        output_dir / series_slug(episode_config["series_title"])
+        / f"episode_{episode_config['episode_number']}"
+    )
     episode_dir.mkdir(parents=True, exist_ok=True)
 
     characters = resolve_voice_ids(episode_config["characters"])
@@ -41,6 +62,8 @@ def run_pipeline(
         script = _mock_script(episode_config)
     else:
         script = generate_episode_script(episode_config, LLMClient())
+    script = canonicalize_script(script)
+    validate_script_voices(script, characters)
 
     (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
 
@@ -61,7 +84,7 @@ def run_pipeline(
     if not skip_video and image_paths:
         video_path = assemble_episode_video(
             script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4",
-            mock=mock, captions=captions,
+            captions=captions,
         )
 
     manifest = {
@@ -90,7 +113,7 @@ def _mock_script(episode_config: dict) -> dict:
                 "dialogue": [{"character": main_character["name"], "line": "This can't be right."}],
                 "narrator_lines": [f"{main_character['name']} had no idea what came next."],
                 "emotional_tone": "tense, uncertain",
-                "duration_seconds": 35,
+                "duration_seconds": 8,
             },
             {
                 "scene_number": 2,
@@ -98,7 +121,7 @@ def _mock_script(episode_config: dict) -> dict:
                 "dialogue": [{"character": main_character["name"], "line": "I won't let them win."}],
                 "narrator_lines": ["The line had been crossed."],
                 "emotional_tone": "defiant",
-                "duration_seconds": 40,
+                "duration_seconds": 8,
             },
         ],
     }

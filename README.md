@@ -14,9 +14,13 @@ Generates an anime episode end to end from a JSON config:
    using voice settings tuned for anime delivery (stability 0.35, similarity 0.85,
    style exaggeration 0.40, speaker boost on).
 5. **Video assembly** — ffmpeg turns each scene's image + voiceover into a slow
-   zoom clip with burned-in captions (each spoken line timed across the scene),
+   zoom clip with burned-in captions timed to each line's real audio duration,
    then concatenates all scenes into the finished vertical short (`episode.mp4`).
    Pass `--no-captions` to turn the on-screen text off.
+
+The pipeline validates your config and API keys up front — a typo'd voice name,
+a missing narrator, or a missing key fails immediately with a clear message
+before any paid API call is made. The CLI loads `.env` automatically.
 
 ## Setup
 
@@ -34,8 +38,9 @@ or equivalent).
 python -m anime_factory.cli --config examples/shadow_protocol_ep3.json --output-dir output
 ```
 
-Add `--mock` to do a dry run with no API calls (writes placeholder script/audio/images
-and still renders a real `episode.mp4` so you can check timing and layout). Other flags:
+Add `--mock` to do a dry run with no API calls: placeholder script and images, and
+real (silent) mp3s sized to estimated speech time — so the rendered `episode.mp4`
+previews the true caption timing and layout. Other flags:
 - `--skip-audio` — skip ElevenLabs
 - `--skip-images` — skip image generation (also skips video, since it has nothing to render)
 - `--skip-video` — skip the final ffmpeg assembly, keep script/prompts/images/audio

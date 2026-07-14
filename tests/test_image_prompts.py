@@ -35,3 +35,20 @@ def test_later_scene_reuses_same_character_continuity():
 def test_narrator_with_no_visual_description_is_skipped():
     prompts = build_episode_prompts(SCENES, CHARACTERS)
     assert "Narrator" not in prompts[0]
+
+
+def test_prefix_name_does_not_false_match():
+    # "Kai" must not be detected inside "Kaito"
+    characters = [
+        {"name": "Kai", "visual_description": "silver-haired swordsman"},
+        {"name": "Kaito", "visual_description": "anime teen boy, dark messy hair"},
+    ]
+    scenes = [{
+        "scene_number": 1,
+        "scene_description": "Kaito sits in a dark server room.",
+        "dialogue": [],
+        "emotional_tone": "tense",
+    }]
+    prompts = build_episode_prompts(scenes, characters)
+    assert "silver-haired swordsman" not in prompts[0]
+    assert "anime teen boy" in prompts[0]

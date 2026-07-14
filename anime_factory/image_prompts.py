@@ -6,7 +6,14 @@ given character gets the full visual description baked in; later scenes reuse
 "same character" for continuity, exactly as shown in the source workflow.
 """
 
+import re
+
 from anime_factory.config import DEFAULT_IMAGE_STYLE_SUFFIX
+
+
+def _mentioned(name: str, text: str) -> bool:
+    # Word-boundary match so "Kai" doesn't false-positive inside "Kaito".
+    return re.search(rf"\b{re.escape(name)}\b", text) is not None
 
 
 def build_scene_prompt(
@@ -16,7 +23,7 @@ def build_scene_prompt(
     style_suffix: str = DEFAULT_IMAGE_STYLE_SUFFIX,
 ) -> str:
     char_lookup = {c["name"]: c for c in characters if c.get("visual_description")}
-    present = [name for name in char_lookup if name in scene["scene_description"] or any(
+    present = [name for name in char_lookup if _mentioned(name, scene["scene_description"]) or any(
         d["character"] == name for d in scene.get("dialogue", [])
     )]
 

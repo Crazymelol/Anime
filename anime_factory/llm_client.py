@@ -2,39 +2,48 @@
 
 import os
 
+from anime_factory.validation import ConfigError
+
 
 class LLMClient:
     def __init__(self, provider: str | None = None, model: str | None = None):
         self.provider = provider or os.environ.get("LLM_PROVIDER", "anthropic")
+        # Build the SDK client once: missing keys fail here (before any spend)
+        # and repeated generate() calls reuse the pooled connection.
         if self.provider == "anthropic":
             self.model = model or os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+            self._client = self._make_anthropic()
         elif self.provider == "openai":
             self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4o")
+            self._client = self._make_openai()
         else:
-            raise ValueError(f"Unknown LLM provider: {self.provider}")
+            raise ConfigError(f"Unknown LLM provider: {self.provider}")
+
+    def _make_anthropic(self):
+        import anthropic
+
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise ConfigError("ANTHROPIC_API_KEY is not set (check your .env).")
+        return anthropic.Anthropic()
+
+    def _make_openai(self):
+        from openai import OpenAI
+
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise ConfigError("OPENAI_API_KEY is not set (check your .env).")
+        return OpenAI()
 
     def generate(self, system: str, user: str, max_tokens: int = 4096) -> str:
         if self.provider == "anthropic":
-            return self._generate_anthropic(system, user, max_tokens)
-        return self._generate_openai(system, user, max_tokens)
+            response = self._client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            )
+            return "".join(block.text for block in response.content if block.type == "text")
 
-    def _generate_anthropic(self, system: str, user: str, max_tokens: int) -> str:
-        import anthropic
-
-        client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        response = client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return "".join(block.text for block in response.content if block.type == "text")
-
-    def _generate_openai(self, system: str, user: str, max_tokens: int) -> str:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        response = client.chat.completions.create(
+        response = self._client.chat.completions.create(
             model=self.model,
             max_tokens=max_tokens,
             messages=[

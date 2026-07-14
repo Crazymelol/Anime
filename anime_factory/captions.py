@@ -1,23 +1,22 @@
 """Builds ASS subtitle files that get burned into the video.
 
 Short-form vertical videos (TikTok/Reels) are almost always watched on mute, so
-on-screen captions are essential. Each scene's spoken lines (narration + dialogue)
-are split evenly across the scene's duration and rendered large, centered in the
-lower third with a heavy outline for readability over any background.
+on-screen captions are essential. Each spoken line is timed to its own audio
+clip's real duration when available (falling back to an even split), rendered
+large and centered in the lower third with a heavy outline for readability.
 """
 
 import textwrap
 from pathlib import Path
 
-# Vertical canvas; must match video_assembly.VIDEO_SIZE.
-PLAY_RES_X = 1080
-PLAY_RES_Y = 1920
+from anime_factory.config import VIDEO_HEIGHT, VIDEO_WIDTH
+
 WRAP_WIDTH = 24  # characters per caption line before wrapping
 
 ASS_HEADER = f"""[Script Info]
 ScriptType: v4.00+
-PlayResX: {PLAY_RES_X}
-PlayResY: {PLAY_RES_Y}
+PlayResX: {VIDEO_WIDTH}
+PlayResY: {VIDEO_HEIGHT}
 WrapStyle: 0
 ScaledBorderAndShadow: yes
 
@@ -38,11 +37,13 @@ def scene_caption_lines(scene: dict) -> list[str]:
 
 
 def _format_time(seconds: float) -> str:
-    seconds = max(0.0, seconds)
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = seconds % 60
-    return f"{hours}:{minutes:02d}:{secs:05.2f}"
+    # Integer centisecond arithmetic with carry, so 59.997s becomes 0:01:00.00
+    # rather than the invalid 0:00:60.00 that naive float formatting produces.
+    centis = max(0, round(seconds * 100))
+    hours, rem = divmod(centis, 360000)
+    minutes, rem = divmod(rem, 6000)
+    secs, centis = divmod(rem, 100)
+    return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
 
 
 def _escape_text(text: str) -> str:
@@ -52,20 +53,33 @@ def _escape_text(text: str) -> str:
     return wrapped.replace("\n", "\\N")
 
 
-def build_scene_caption_file(lines: list[str], duration_seconds: float, output_path: Path) -> Path | None:
-    """Write an ASS file with each line shown for an equal slice of the scene.
+def build_scene_caption_file(
+    lines: list[str],
+    duration_seconds: float,
+    output_path: Path,
+    line_durations: list[float] | None = None,
+) -> Path | None:
+    """Write an ASS file timing each line to its real audio duration when known.
 
-    Returns None (writes nothing) if there are no lines to show.
+    `line_durations` (seconds per line, same order as `lines`) comes from probing
+    the per-line audio files; when absent or mismatched, lines get an equal slice
+    of the scene. Returns None (writes nothing) if there are no lines to show.
     """
     if not lines:
         return None
 
-    segment = duration_seconds / len(lines)
+    if line_durations and len(line_durations) == len(lines):
+        durations = line_durations
+    else:
+        durations = [duration_seconds / len(lines)] * len(lines)
+
     events = []
-    for i, line in enumerate(lines):
-        start = _format_time(i * segment)
-        end = _format_time((i + 1) * segment)
-        events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{_escape_text(line)}")
+    cursor = 0.0
+    for line, duration in zip(lines, durations):
+        start, cursor = cursor, cursor + duration
+        events.append(
+            f"Dialogue: 0,{_format_time(start)},{_format_time(cursor)},Default,,0,0,0,,{_escape_text(line)}"
+        )
 
     output_path.write_text(ASS_HEADER + "\n".join(events) + "\n")
     return output_path
