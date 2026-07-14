@@ -1,0 +1,26 @@
+{
+  "series_title": "First Test",
+  "total_episodes": 1,
+  "episode_number": 1,
+  "premise": "A tiny two-scene story to confirm your keys work: a young mage finds a glowing door and steps through.",
+  "tone": "dark",
+  "pacing": "fast, with a cliffhanger ending",
+  "total_minutes": 1,
+  "style": "dark_fantasy",
+  "characters": [
+    {
+      "name": "Aria",
+      "role": "main character",
+      "age": 16,
+      "brief": "a young mage who senses hidden doors between worlds",
+      "visual_description": "anime girl, silver hair, violet eyes, dark cloak with glowing runes, deep shadows, purple rim lighting",
+      "voice": "bella"
+    },
+    {
+      "name": "Narrator",
+      "role": "narrator",
+      "visual_description": null,
+      "voice": "antoni"
+    }
+  ]
+}

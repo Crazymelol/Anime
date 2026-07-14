@@ -12,8 +12,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from anime_factory.captions import build_scene_caption_file, scene_caption_lines
+from anime_factory.captions import (
+    build_hook_caption_file,
+    build_scene_caption_file,
+    scene_caption_lines,
+)
 from anime_factory.config import FPS, VIDEO_SIZE
+
+HOOK_SECONDS = 1.8
+MUSIC_VOLUME = 0.15  # music bed level under the voiceover
 
 
 def _run(cmd: list[str]) -> None:
@@ -76,11 +83,26 @@ def build_scene_clip(
     cmd = ["ffmpeg", "-y", "-i", str(image_path)]
     if audio_path:
         cmd += ["-i", str(audio_path)]
+    else:
+        # Silent track instead of no track: every clip must carry identical
+        # streams or the lossless concat of the episode breaks.
+        cmd += ["-f", "lavfi", "-t", f"{duration_seconds:.3f}", "-i", "anullsrc=r=44100:cl=mono"]
     cmd += ["-vf", filters, "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p"]
-    cmd += ["-c:a", "aac", "-shortest"] if audio_path else ["-an"]
-    cmd += [str(output_path)]
+    cmd += ["-c:a", "aac", "-shortest", str(output_path)]
 
     _run(cmd)
+    return output_path
+
+
+def add_music_bed(video_path: Path, music_path: Path, output_path: Path) -> Path:
+    """Loop a music track quietly under the existing voiceover."""
+    _run([
+        "ffmpeg", "-y", "-i", str(video_path), "-stream_loop", "-1", "-i", str(music_path),
+        "-filter_complex",
+        f"[1:a]volume={MUSIC_VOLUME}[music];[0:a][music]amix=inputs=2:duration=first:dropout_transition=3[a]",
+        "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac",
+        str(output_path),
+    ])
     return output_path
 
 
@@ -90,6 +112,8 @@ def assemble_episode_video(
     audio_by_scene: dict[int, list[Path]],
     output_path: Path,
     captions: bool = True,
+    hook_text: str = "",
+    music_path: Path | None = None,
 ) -> Path:
     if len(image_paths) != len(scenes):
         raise ValueError(f"Got {len(image_paths)} images for {len(scenes)} scenes.")
@@ -99,6 +123,15 @@ def assemble_episode_video(
 
     try:
         clip_paths = []
+
+        # Scroll-stopping title card: scene 1's image with the hook line, big and centered.
+        if hook_text.strip() and captions:
+            hook_caption = build_hook_caption_file(hook_text, HOOK_SECONDS, work_dir / "hook.ass")
+            clip_paths.append(build_scene_clip(
+                image_paths[0], None, HOOK_SECONDS, work_dir / "scene_0_hook.mp4",
+                caption_file=hook_caption,
+            ))
+
         for i, scene in enumerate(scenes):
             scene_number = scene["scene_number"]
             scene_audio_files = audio_by_scene.get(scene_number, [])
@@ -124,7 +157,12 @@ def assemble_episode_video(
                 work_dir / f"scene_{scene_number}.mp4", caption_file=caption_file,
             ))
 
-        concat_media(clip_paths, output_path)
+        if music_path is not None:
+            raw_path = work_dir / "episode_raw.mp4"
+            concat_media(clip_paths, raw_path)
+            add_music_bed(raw_path, music_path, output_path)
+        else:
+            concat_media(clip_paths, output_path)
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
     return output_path

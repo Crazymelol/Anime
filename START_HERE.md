@@ -97,7 +97,12 @@ STABILITY_API_KEY=your-stability-key
 
 ## Step 6 — Make a REAL video
 
-Same command as the test, just **without** `--mock`:
+Start with the **tiny test story** — it's 2 scenes, about 1 minute, and costs
+only a few cents, so you can confirm your keys work before making anything big:
+```
+.venv/bin/python -m anime_factory.cli --config examples/first_real_test.json
+```
+Once that works, make the full example (or your own story):
 ```
 .venv/bin/python -m anime_factory.cli --config examples/shadow_protocol_ep3.json
 ```
@@ -119,6 +124,12 @@ Upload it anywhere.
    use `my_episode.json` when it exists — they'll say so at the top.
 
 ---
+
+## Optional: background music
+
+Drop any music file named **`music.mp3`** into the main project folder and it
+will automatically play quietly under the voice in every video. (Use music you
+have the rights to — royalty-free tracks are easy to find.)
 
 ## Honest expectations
 

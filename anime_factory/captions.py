@@ -23,6 +23,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,Arial,66,&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Hook,Arial,110,&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,3,5,60,60,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -82,4 +83,16 @@ def build_scene_caption_file(
         )
 
     output_path.write_text(ASS_HEADER + "\n".join(events) + "\n")
+    return output_path
+
+
+def build_hook_caption_file(hook_text: str, duration_seconds: float, output_path: Path) -> Path | None:
+    """Big centered scroll-stopper text for the title card, with a quick fade."""
+    if not hook_text.strip():
+        return None
+    event = (
+        f"Dialogue: 0,{_format_time(0)},{_format_time(duration_seconds)},Hook,,0,0,0,,"
+        f"{{\\fad(200,200)}}{_escape_text(hook_text)}"
+    )
+    output_path.write_text(ASS_HEADER + event + "\n")
     return output_path

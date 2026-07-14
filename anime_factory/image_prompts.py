@@ -36,12 +36,20 @@ def build_scene_prompt(
             description_parts.append("same character")
 
     description_parts.append(scene["scene_description"])
+    # Per-scene direction from the script (shot type, lighting mood) makes each
+    # frame read like a storyboard panel instead of the same flat composition.
+    description_parts.append(scene.get("camera", ""))
+    description_parts.append(scene.get("lighting", ""))
     description_parts.append(scene.get("emotional_tone", ""))
     description_parts.append(style_suffix)
 
     return ", ".join(p for p in description_parts if p)
 
 
-def build_episode_prompts(scenes: list[dict], characters: list[dict]) -> list[str]:
+def build_episode_prompts(
+    scenes: list[dict],
+    characters: list[dict],
+    style_suffix: str = DEFAULT_IMAGE_STYLE_SUFFIX,
+) -> list[str]:
     seen_characters: set[str] = set()
-    return [build_scene_prompt(scene, characters, seen_characters) for scene in scenes]
+    return [build_scene_prompt(scene, characters, seen_characters, style_suffix) for scene in scenes]

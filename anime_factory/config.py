@@ -32,10 +32,24 @@ FPS = 25
 # Pure descriptive text — no Midjourney CLI flags. The prompts go verbatim to
 # the Stability API (which takes aspect_ratio as a separate parameter), and the
 # wording matches the vertical 9:16 short the pipeline renders.
-DEFAULT_IMAGE_STYLE_SUFFIX = (
-    "cinematic anime style, ultra detailed, dramatic lighting, "
-    "vertical composition, 4k"
-)
+# An episode config can pick a preset by name ("style": "dark_fantasy") or
+# supply its own raw suffix text.
+STYLE_PRESETS = {
+    "dark_fantasy": (
+        "cinematic dark fantasy anime style, deep shadows, glowing purple and "
+        "blue rim lighting, high contrast, dramatic manhwa composition, "
+        "ultra detailed, vertical composition, 4k"
+    ),
+    "wholesome": (
+        "soft cinematic anime style, warm golden-hour lighting, gentle pastel "
+        "palette, Makoto Shinkai inspired, ultra detailed, vertical composition, 4k"
+    ),
+    "cyberpunk": (
+        "cyberpunk anime style, neon-drenched night city, teal and magenta "
+        "lighting, rain reflections, high detail, vertical composition, 4k"
+    ),
+}
+DEFAULT_IMAGE_STYLE_SUFFIX = STYLE_PRESETS["dark_fantasy"]
 
 API_TIMEOUT = 60
 

@@ -3,8 +3,9 @@
 Generates an anime episode end to end from a JSON config:
 
 1. **Script** — an LLM (Anthropic or OpenAI) writes the episode as structured scenes
-   (scene description, dialogue, narrator lines, emotional tone), one scene per
-   30-45 seconds of runtime.
+   (scene description, camera shot, lighting mood, dialogue, narrator lines,
+   emotional tone), one scene per 30-45 seconds of runtime, plus a scroll-stopping
+   "hook" line for the opening title card.
 2. **Image prompts** — each scene is turned into a Midjourney-style prompt, reusing
    "same character" continuity wording after a character's first appearance, and
    written to a text file for reference.
@@ -13,10 +14,17 @@ Generates an anime episode end to end from a JSON config:
 4. **Voiceover** — every dialogue/narration line is sent to the ElevenLabs TTS API
    using voice settings tuned for anime delivery (stability 0.35, similarity 0.85,
    style exaggeration 0.40, speaker boost on).
-5. **Video assembly** — ffmpeg turns each scene's image + voiceover into a slow
-   zoom clip with burned-in captions timed to each line's real audio duration,
-   then concatenates all scenes into the finished vertical short (`episode.mp4`).
-   Pass `--no-captions` to turn the on-screen text off.
+5. **Video assembly** — ffmpeg opens with a 1.8s hook title card, turns each
+   scene's image + voiceover into a slow zoom clip with burned-in captions timed
+   to each line's real audio duration, concatenates everything into the finished
+   vertical short (`episode.mp4`), and optionally mixes a quiet music bed under
+   the voiceover. Pass `--no-captions` to turn the on-screen text off.
+
+Extras in the episode config:
+- `"style"` — art direction preset: `dark_fantasy` (default), `wholesome`,
+  `cyberpunk`, or your own raw style text
+- `"music"` — path to a music file to loop quietly under the voice (a
+  `music.mp3` next to the project is picked up automatically)
 
 The pipeline validates your config and API keys up front — a typo'd voice name,
 a missing narrator, or a missing key fails immediately with a clear message

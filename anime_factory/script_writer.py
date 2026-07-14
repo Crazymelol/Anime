@@ -20,10 +20,13 @@ Episode {episode_number}: {premise}
 Format the output as a JSON object with this exact shape:
 {{
   "episode_title": "<short title for this episode>",
+  "hook": "<one scroll-stopping line, max 8 words, shown on screen in the first 2 seconds>",
   "scenes": [
     {{
       "scene_number": 1,
       "scene_description": "<visual description suitable for image generation>",
+      "camera": "<shot type and angle, e.g. 'extreme close-up, low angle'>",
+      "lighting": "<lighting mood, e.g. 'cold blue monitor glow, hard shadows'>",
       "dialogue": [{{"character": "<name>", "line": "<spoken line>"}}],
       "narrator_lines": ["<narration line>"],
       "emotional_tone": "<short tone note>",
@@ -31,6 +34,9 @@ Format the output as a JSON object with this exact shape:
     }}
   ]
 }}
+
+Vary the camera between scenes (wide establishing, close-up, dutch angle, over-the-shoulder)
+like a storyboard artist would.
 
 Each scene should be 30-45 seconds when read aloud. Total episode: {total_minutes} minutes.
 Tone: {tone}. Pacing: {pacing}."""

@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 
-from anime_factory.config import VOICE_PRESETS
+from anime_factory.config import DEFAULT_IMAGE_STYLE_SUFFIX, STYLE_PRESETS, VOICE_PRESETS
 from anime_factory.image_gen import generate_episode_images
 from anime_factory.image_prompts import build_episode_prompts
 from anime_factory.llm_client import LLMClient
@@ -67,7 +67,11 @@ def run_pipeline(
 
     (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
 
-    prompts = build_episode_prompts(script["scenes"], characters)
+    # "style" may name a preset or be raw suffix text of its own.
+    style = episode_config.get("style", "")
+    style_suffix = STYLE_PRESETS.get(style, style) or DEFAULT_IMAGE_STYLE_SUFFIX
+
+    prompts = build_episode_prompts(script["scenes"], characters, style_suffix)
     (episode_dir / "image_prompts.txt").write_text("\n\n".join(
         f"Scene {i + 1}: {p}" for i, p in enumerate(prompts)
     ))
@@ -80,11 +84,22 @@ def run_pipeline(
     if not skip_audio:
         audio_by_scene = generate_episode_audio(script["scenes"], characters, episode_dir, mock=mock)
 
+    # Optional music bed: explicit "music" path in the config, else music.mp3
+    # next to the project if present.
+    music_path = None
+    music_setting = episode_config.get("music")
+    for candidate in ([Path(music_setting)] if music_setting else []) + [Path("music.mp3")]:
+        if candidate.is_file():
+            music_path = candidate
+            break
+
     video_path = None
     if not skip_video and image_paths:
         video_path = assemble_episode_video(
             script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4",
             captions=captions,
+            hook_text=str(script.get("hook", "")),
+            music_path=music_path,
         )
 
     manifest = {
@@ -106,10 +121,13 @@ def _mock_script(episode_config: dict) -> dict:
     main_character = next(c for c in episode_config["characters"] if c.get("role") != "narrator")
     return {
         "episode_title": f"{episode_config['series_title']} - Episode {episode_config['episode_number']} (mock)",
+        "hook": "They were never meant to find it.",
         "scenes": [
             {
                 "scene_number": 1,
                 "scene_description": f"{main_character['name']} discovers something is wrong.",
+                "camera": "extreme close-up, low angle",
+                "lighting": "cold blue monitor glow, hard shadows",
                 "dialogue": [{"character": main_character["name"], "line": "This can't be right."}],
                 "narrator_lines": [f"{main_character['name']} had no idea what came next."],
                 "emotional_tone": "tense, uncertain",
@@ -118,6 +136,8 @@ def _mock_script(episode_config: dict) -> dict:
             {
                 "scene_number": 2,
                 "scene_description": f"{main_character['name']} confronts the truth.",
+                "camera": "wide shot, dutch angle",
+                "lighting": "purple rim light against darkness",
                 "dialogue": [{"character": main_character["name"], "line": "I won't let them win."}],
                 "narrator_lines": ["The line had been crossed."],
                 "emotional_tone": "defiant",
