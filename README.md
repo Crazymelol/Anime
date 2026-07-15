@@ -42,6 +42,13 @@ or equivalent).
 
 ## Usage
 
+**Web UI (Studio):** `python -m anime_factory.webui` (or double-click
+`Open Studio.command` on a Mac), then open http://127.0.0.1:8765 — story form,
+setup checks, one-button generation with live progress, in-browser preview.
+Local only; nothing is exposed to the internet.
+
+**CLI:**
+
 ```bash
 python -m anime_factory.cli --config examples/shadow_protocol_ep3.json --output-dir output
 ```

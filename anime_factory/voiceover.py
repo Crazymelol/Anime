@@ -151,7 +151,8 @@ def generate_episode_audio(
             _write_silent_mp3(path, estimate_speech_seconds(text))
     elif provider == "xtts":
         with requests.Session() as session:
-            for text, voice, path in jobs:  # sequential: one local machine
+            for i, (text, voice, path) in enumerate(jobs):  # sequential: one local machine
+                print(f"STAGE: Speaking line {i + 1} of {len(jobs)}...", flush=True)
                 _wav_bytes_to_mp3(synthesize_line_xtts(voice, text, language, session=session), path)
     else:
         with requests.Session() as session, ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:

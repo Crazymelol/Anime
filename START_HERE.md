@@ -3,6 +3,11 @@
 No coding needed. Follow the steps in order. You'll end up with a finished
 vertical video (like a TikTok) made from a story idea.
 
+> **The easy way, once Steps 1–2 are done:** double-click **`Open Studio.command`**.
+> It opens a page in your browser where you write the story in a form, check
+> that everything is connected, press one button, and watch the video get made.
+> Everything below still works too — the Studio is just the friendliest door.
+
 There's a **free test mode** that needs no sign-ups and no money — do that first
 to prove it works, then add the paid helpers when you're ready.
 

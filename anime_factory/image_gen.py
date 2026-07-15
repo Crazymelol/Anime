@@ -112,7 +112,8 @@ def generate_episode_images(
             generate_mock_image(path, MOCK_PALETTE[i % len(MOCK_PALETTE)])
     elif provider == "drawthings":
         with requests.Session() as session:
-            for prompt, path in zip(prompts, paths):  # sequential: one local GPU
+            for i, (prompt, path) in enumerate(zip(prompts, paths)):  # sequential: one local GPU
+                print(f"STAGE: Drawing scene {i + 1} of {len(prompts)} (local, can take a while)...", flush=True)
                 generate_image_drawthings(prompt, path, session=session)
     else:
         with requests.Session() as session, ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:

@@ -62,12 +62,14 @@ def run_pipeline(
 
     characters = resolve_voice_ids(episode_config["characters"])
 
+    print("STAGE: Writing the script..." if not mock else "STAGE: Using the test script (free mode)...", flush=True)
     if mock:
         script = _mock_script(episode_config)
     else:
         script = generate_episode_script(episode_config, LLMClient())
     script = canonicalize_script(script)
     validate_script_voices(script, characters)
+    print(f"STAGE: Script ready — {len(script['scenes'])} scenes.", flush=True)
 
     (episode_dir / "script.json").write_text(json.dumps(script, indent=2))
 
@@ -82,10 +84,12 @@ def run_pipeline(
 
     image_paths: list[Path] = []
     if not skip_images:
+        print("STAGE: Drawing the scenes...", flush=True)
         image_paths = generate_episode_images(prompts, episode_dir, mock=mock)
 
     audio_by_scene: dict[int, list[Path]] = {}
     if not skip_audio:
+        print("STAGE: Recording the voices...", flush=True)
         audio_by_scene = generate_episode_audio(
             script["scenes"], characters, episode_dir, mock=mock,
             language=episode_config.get("language", "en"),
@@ -102,6 +106,7 @@ def run_pipeline(
 
     video_path = None
     if not skip_video and image_paths:
+        print("STAGE: Assembling the video...", flush=True)
         video_path = assemble_episode_video(
             script["scenes"], image_paths, audio_by_scene, episode_dir / "episode.mp4",
             captions=captions,
