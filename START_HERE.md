@@ -25,33 +25,34 @@ to prove it works, then add the paid helpers when you're ready.
 
 ---
 
-## Step 2 — One-time install (about 15 min)
+## Step 2 — One-time install (automatic!)
 
-1. Open **Terminal**: press **Cmd + Space**, type `Terminal`, press **Enter**.
-   A plain window opens — that's normal.
-2. Copy each block below, paste into Terminal, press **Enter**. Let each finish
-   before doing the next.
+Just **double-click `Install (run me first).command`** in the project folder
+and leave the window open for 10–20 minutes. It installs everything by itself.
 
-**a) Install Homebrew** (the thing that installs everything else):
+Two things it may ask:
+- Your **Mac password** — type it (nothing shows while typing, that's normal)
+  and press Enter.
+- If macOS blocks the file ("unidentified developer"): **right-click** the file
+  → **Open** → **Open**. You only do this once.
+
+When it says **ALL DONE / ΕΤΟΙΜΟ**, the techie part is over — forever.
+
+<details>
+<summary>Manual version (only if the automatic one fails)</summary>
+
+1. Open **Terminal** (Cmd + Space, type `Terminal`, Enter) and paste, one at a time:
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
-> It may ask for your Mac password. Type it (the dots won't show — that's normal),
-> press Enter. This one takes the longest.
-
-**b) Install Python and the video tool:**
 ```
 brew install python ffmpeg
 ```
-
-**c) Set up the project.** Type `cd ` (the word cd then a space), then **drag your
-project folder from the Desktop into the Terminal window** and press **Enter**.
-Then paste:
+2. Type `cd ` (with a space), drag the project folder into the window, Enter. Then:
 ```
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
-
-That's the whole techie part. You never do it again.
+</details>
 
 ---
 
