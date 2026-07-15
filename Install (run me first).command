@@ -62,6 +62,33 @@ fi
 .venv/bin/pip install --quiet --upgrade pip || true
 .venv/bin/pip install --quiet -r requirements.txt || fail "project packages"
 
+# First-time .env, pre-configured for free local generation (Draw Things + XTTS).
+# Contains no secrets; the story-writer key is the only thing left to paste in.
+if [ ! -f .env ]; then
+  cat > .env <<'ENVEOF'
+# === Anime Factory settings ===
+# The ONLY thing missing is a story-writer key. Get a free one at
+# openrouter.ai (starts with sk-or-) and paste it after OPENAI_API_KEY=
+LLM_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=meta-llama/llama-3.3-70b-instruct:free
+
+# Prefer Claude for better stories? Use these two instead and set
+# LLM_PROVIDER=anthropic :
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+
+# Images: FREE + local via the Draw Things app (API Server on, HTTP, TLS off)
+IMAGE_PROVIDER=drawthings
+DRAWTHINGS_URL=http://127.0.0.1:7859
+
+# Voice: FREE + local via XTTS  (tts-server --model_name tts_models/multilingual/multi-dataset/xtts_v2)
+TTS_PROVIDER=xtts
+ENVEOF
+  echo "    Created starter .env (configured for Draw Things + XTTS, free)."
+fi
+
 echo ""
 echo "==============================================="
 echo "  ALL DONE! / ΕΤΟΙΜΟ!"
