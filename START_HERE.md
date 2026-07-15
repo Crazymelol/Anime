@@ -125,6 +125,13 @@ Upload it anywhere.
 
 ---
 
+## Not sure if everything is connected?
+
+Double-click **`Check Setup.command`** any time. It tests everything on your
+Mac — Draw Things connection, the voice server, your keys, the video tool —
+and tells you exactly what's OK and what to fix. It changes nothing and costs
+nothing.
+
 ## Optional: FREE images and voice (no sign-ups at all)
 
 If you have the **Draw Things** app and **TTS v2 (XTTS)** on your Mac, you can
