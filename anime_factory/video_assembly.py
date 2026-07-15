@@ -17,10 +17,14 @@ from anime_factory.captions import (
     build_scene_caption_file,
     scene_caption_lines,
 )
-from anime_factory.config import FPS, VIDEO_SIZE
+from anime_factory.config import FPS, VIDEO_HEIGHT, VIDEO_SIZE, VIDEO_WIDTH
 
 HOOK_SECONDS = 1.8
 MUSIC_VOLUME = 0.15  # music bed level under the voiceover
+# Oversampled 9:16 canvas fed to zoompan (2x output) so the slow zoom stays
+# smooth; scale-to-cover + center-crop makes ANY source image aspect safe
+# (local SD models often produce 512x912 rather than exact 9:16).
+_PRE_W, _PRE_H = VIDEO_WIDTH * 2, VIDEO_HEIGHT * 2
 
 
 def _run(cmd: list[str]) -> None:
@@ -71,12 +75,16 @@ def build_scene_clip(
     output_path: Path,
     caption_file: Path | None = None,
 ) -> Path:
-    # Oversample before zoompan to avoid jitter, but only ~2x output size -- scaling to
-    # 8000px (a common ffmpeg ken-burns recipe) made long scenes take minutes to encode.
-    # zoompan's d= is the single frame-count bound: the image is read once (no -loop),
-    # so the zoom can never restart mid-scene.
+    # Oversample before zoompan to avoid jitter, but only ~2x output size -- larger
+    # prescales (a common ffmpeg ken-burns recipe uses 8000px) made long scenes take
+    # minutes to encode. zoompan's d= is the single frame-count bound: the image is
+    # read once (no -loop), so the zoom can never restart mid-scene.
     frames = max(1, round(duration_seconds * FPS))
-    filters = f"scale=2400:-1,zoompan=z='min(zoom+0.0008,1.1)':d={frames}:s={VIDEO_SIZE}:fps={FPS}"
+    filters = (
+        f"scale={_PRE_W}:{_PRE_H}:force_original_aspect_ratio=increase,"
+        f"crop={_PRE_W}:{_PRE_H},"
+        f"zoompan=z='min(zoom+0.0008,1.1)':d={frames}:s={VIDEO_SIZE}:fps={FPS}"
+    )
     if caption_file:
         filters += f",subtitles=filename={_escape_filter_path(caption_file)}"
 

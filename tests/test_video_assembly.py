@@ -1,4 +1,5 @@
 import shutil
+import subprocess
 
 import pytest
 
@@ -63,6 +64,26 @@ def test_concat_media_survives_apostrophe_paths(tmp_path):
 
     assert out.exists()
     assert get_audio_duration(out) == pytest.approx(1.0, abs=0.3)
+
+
+@requires_ffmpeg
+def test_odd_aspect_source_image_fills_frame_undistorted(tmp_path):
+    # local SD models produce e.g. 512x912 — the clip must still be exactly
+    # 1080x1920 (cover + center-crop), never squished
+    odd = tmp_path / "odd.png"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=0x336699:s=512x768",
+         "-frames:v", "1", str(odd)],
+        check=True, capture_output=True,
+    )
+    from anime_factory.video_assembly import build_scene_clip
+    clip = build_scene_clip(odd, None, 1.0, tmp_path / "clip.mp4")
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries",
+         "stream=width,height", "-of", "csv=p=0", str(clip)],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert probe == "1080,1920"
 
 
 @requires_ffmpeg

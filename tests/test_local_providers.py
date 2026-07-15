@@ -58,8 +58,11 @@ def test_drawthings_speaks_a1111_protocol(stub_server, tmp_path):
 
     assert _StubHandler.seen["path"] == "/sdapi/v1/txt2img"
     body = _StubHandler.seen["body"]
-    assert body["prompt"] == "kaito in server room"
-    assert (body["width"], body["height"]) == (720, 1280)  # vertical
+    # SD1.5 anime models want quality tags up front and a 512-wide vertical frame
+    assert body["prompt"] == "masterpiece, best quality, kaito in server room"
+    assert (body["width"], body["height"]) == (512, 912)
+    assert "bad anatomy" in body["negative_prompt"]
+    assert body["cfg_scale"] == 7
     assert out.read_bytes().startswith(b"\x89PNG")
 
 

@@ -25,8 +25,19 @@ STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/core"
 MOCK_PALETTE = ["0x1a1a2e", "0x16213e", "0x0f3460", "0x533483"]
 MAX_WORKERS = 4
 LOCAL_TIMEOUT = 600  # local SD on a laptop can take minutes per image
-# SD-friendly 9:16; the video stage upscales, so 720x1280 is plenty
-LOCAL_WIDTH, LOCAL_HEIGHT = 720, 1280
+# SD1.5 models (Anything, Counterfeit...) were trained near 512px and grow
+# extra limbs at larger sizes, so default to a 512-wide 9:16 frame; the video
+# stage upscales. SDXL users can raise these via env.
+LOCAL_WIDTH = int(os.environ.get("DRAWTHINGS_WIDTH", "512"))
+LOCAL_HEIGHT = int(os.environ.get("DRAWTHINGS_HEIGHT", "912"))
+# Danbooru-style quality tags that SD1.5 anime models expect up front.
+LOCAL_PROMPT_PREFIX = os.environ.get("DRAWTHINGS_PROMPT_PREFIX", "masterpiece, best quality")
+LOCAL_NEGATIVE_PROMPT = os.environ.get(
+    "DRAWTHINGS_NEGATIVE_PROMPT",
+    "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, "
+    "fewer digits, cropped, worst quality, low quality, jpeg artifacts, signature, "
+    "watermark, username, blurry, extra limbs, deformed",
+)
 
 
 def generate_image(prompt: str, api_key: str, output_path: Path, session: requests.Session | None = None) -> Path:
@@ -55,11 +66,12 @@ def generate_image_drawthings(
     response = post(
         f"{base_url}/sdapi/v1/txt2img",
         json={
-            "prompt": prompt,
-            "negative_prompt": "text, watermark, logo, low quality, deformed hands",
+            "prompt": f"{LOCAL_PROMPT_PREFIX}, {prompt}" if LOCAL_PROMPT_PREFIX else prompt,
+            "negative_prompt": LOCAL_NEGATIVE_PROMPT,
             "width": LOCAL_WIDTH,
             "height": LOCAL_HEIGHT,
             "steps": int(os.environ.get("DRAWTHINGS_STEPS", "30")),
+            "cfg_scale": float(os.environ.get("DRAWTHINGS_CFG", "7")),
         },
         timeout=LOCAL_TIMEOUT,
     )
