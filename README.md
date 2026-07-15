@@ -84,7 +84,31 @@ OPENAI_MODEL=meta/llama-3.3-70b-instruct
 
 Free models write weaker scripts than Claude/GPT-4o — good for testing the
 plumbing, less good for episodes you publish. This covers only the writing
-stage; images (Stability) and voice (ElevenLabs) are separate services.
+stage; images and voice are separate — but they can be free and local too:
+
+## Free LOCAL images and voice (Draw Things + XTTS-v2)
+
+Both media stages can run entirely on your own machine, no keys, no per-video cost:
+
+**Images — Draw Things (Mac app, free):**
+1. In Draw Things: Settings → enable **API Server** (default port 7860), load an
+   anime-capable Stable Diffusion model.
+2. In `.env`: `IMAGE_PROVIDER=drawthings`
+Any Automatic1111-compatible server (A1111, Forge) works the same way via
+`DRAWTHINGS_URL`.
+
+**Voice — Coqui TTS v2 / XTTS-v2 (free, 16+ languages incl. Greek):**
+1. `pip install coqui-tts` then run:
+   `tts-server --model_name tts_models/multilingual/multi-dataset/xtts_v2`
+2. In `.env`: `TTS_PROVIDER=xtts`
+3. In your episode config, set each character's `"voice"` to an XTTS speaker
+   name (e.g. `"Damien Black"`, `"Claribel Dervla"`) or a path to a short
+   `.wav` of any voice you want to clone. Add `"language": "el"` to the episode
+   config for Greek — the script, captions, and voice all follow it.
+
+Local generation is slower (the laptop does the work) but the only remaining
+paid stage is the script — and OpenRouter/NVIDIA above make that free too.
+A fully free pipeline: OpenRouter + Draw Things + XTTS-v2.
 
 ## Episode config format
 

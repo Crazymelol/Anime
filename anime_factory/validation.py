@@ -44,15 +44,20 @@ def validate_episode_config(episode_config: dict) -> None:
 
 
 def validate_api_keys(skip_images: bool, skip_audio: bool) -> None:
-    """Check every key the enabled stages will need, before spending on any of them."""
+    """Check every key the enabled stages will need, before spending on any of them.
+
+    Local providers (IMAGE_PROVIDER=drawthings, TTS_PROVIDER=xtts) need no keys.
+    """
     missing = []
     provider = os.environ.get("LLM_PROVIDER", "anthropic")
     llm_key = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
     if not os.environ.get(llm_key):
         missing.append(llm_key)
-    if not skip_images and not os.environ.get("STABILITY_API_KEY"):
+    image_provider = os.environ.get("IMAGE_PROVIDER", "stability")
+    if not skip_images and image_provider == "stability" and not os.environ.get("STABILITY_API_KEY"):
         missing.append("STABILITY_API_KEY")
-    if not skip_audio and not os.environ.get("ELEVENLABS_API_KEY"):
+    tts_provider = os.environ.get("TTS_PROVIDER", "elevenlabs")
+    if not skip_audio and tts_provider == "elevenlabs" and not os.environ.get("ELEVENLABS_API_KEY"):
         missing.append("ELEVENLABS_API_KEY")
     if missing:
         raise ConfigError(

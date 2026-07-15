@@ -1,12 +1,19 @@
-"""Calls the ElevenLabs text-to-speech API for every dialogue/narration line in a script,
-using the voice settings from the source workflow (stability 0.35, similarity 0.85,
-style 0.40, speaker boost on).
+"""Turns every dialogue/narration line in a script into speech.
 
-Real lines are synthesized over a shared HTTP session with a small worker pool
-(lines are independent; a 12-minute episode has dozens). In mock mode each line
-becomes a REAL silent .mp3 (ffmpeg anullsrc) sized to an estimated speech
-duration, so offline runs exercise the exact same downstream path — concat,
-duration probing, caption sync — as paid runs.
+Two real providers, chosen with TTS_PROVIDER:
+- "elevenlabs" (default): hosted API with the voice settings from the source
+  workflow (stability 0.35, similarity 0.85, style 0.40, speaker boost on)
+- "xtts": a LOCAL Coqui TTS v2 (XTTS-v2) server — free, on-device, speaks 16+
+  languages including Greek. Start it with:
+      tts-server --model_name tts_models/multilingual/multi-dataset/xtts_v2
+  (default http://127.0.0.1:5002). Character "voice" is then an XTTS speaker
+  name (e.g. "Damien Black") or a path to a short .wav sample to clone.
+
+Hosted lines run over a shared session with a small worker pool; local lines
+run sequentially (one laptop). In mock mode each line becomes a REAL silent
+.mp3 (ffmpeg anullsrc) sized to an estimated speech duration, so offline runs
+exercise the exact same downstream path — concat, duration probing, caption
+sync — as paid runs.
 """
 
 import os
@@ -22,6 +29,7 @@ from anime_factory.validation import ConfigError, find_narrator
 ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 WORDS_PER_SECOND = 2.6  # rough narration pace, used only to size mock audio
 MAX_WORKERS = 4
+LOCAL_TIMEOUT = 300  # local TTS on a laptop can take a while per line
 
 
 def synthesize_line(
@@ -44,6 +52,39 @@ def synthesize_line(
     )
     response.raise_for_status()
     return response.content
+
+
+def synthesize_line_xtts(
+    voice: str,
+    text: str,
+    language: str = "en",
+    session: requests.Session | None = None,
+    base_url: str | None = None,
+) -> bytes:
+    """GET /api/tts on a local Coqui tts-server; returns WAV bytes.
+
+    `voice` is a built-in XTTS speaker name, or a path to a .wav sample for
+    voice cloning (sent as speaker_wav/style_wav).
+    """
+    base_url = (base_url or os.environ.get("XTTS_URL", "http://127.0.0.1:5002")).rstrip("/")
+    params = {"text": text, "language_id": language}
+    if voice.endswith(".wav"):
+        params["speaker_wav"] = voice
+        params["style_wav"] = voice
+    else:
+        params["speaker_id"] = voice
+    get = (session or requests).get
+    response = get(f"{base_url}/api/tts", params=params, timeout=LOCAL_TIMEOUT)
+    response.raise_for_status()
+    return response.content
+
+
+def _wav_bytes_to_mp3(wav_bytes: bytes, output_path: Path) -> None:
+    # Keep every provider's output as mp3 so concat/probing sees uniform files.
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", "pipe:0", "-codec:a", "libmp3lame", "-q:a", "4", str(output_path)],
+        input=wav_bytes, check=True, capture_output=True,
+    )
 
 
 def voice_id_for_character(name: str, characters: list[dict]) -> str:
@@ -71,6 +112,7 @@ def generate_episode_audio(
     output_dir: Path,
     mock: bool = False,
     api_key: str | None = None,
+    language: str = "en",
 ) -> dict[int, list[Path]]:
     """Returns {scene_number: [audio_path, ...]} in narration-then-dialogue order,
     so callers (e.g. video assembly) don't have to reconstruct ordering from filenames.
@@ -103,9 +145,14 @@ def generate_episode_audio(
 
         audio_by_scene[scene_number] = scene_paths
 
+    provider = os.environ.get("TTS_PROVIDER", "elevenlabs")
     if mock:
         for text, _voice_id, path in jobs:
             _write_silent_mp3(path, estimate_speech_seconds(text))
+    elif provider == "xtts":
+        with requests.Session() as session:
+            for text, voice, path in jobs:  # sequential: one local machine
+                _wav_bytes_to_mp3(synthesize_line_xtts(voice, text, language, session=session), path)
     else:
         with requests.Session() as session, ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             def synth(job: tuple[str, str, Path]) -> None:

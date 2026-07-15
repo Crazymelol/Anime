@@ -125,6 +125,30 @@ Upload it anywhere.
 
 ---
 
+## Optional: FREE images and voice (no sign-ups at all)
+
+If you have the **Draw Things** app and **TTS v2 (XTTS)** on your Mac, you can
+skip paying for Stability and ElevenLabs completely:
+
+1. **Draw Things**: open its Settings and turn on **API Server**. Load an
+   anime-style model. Leave the app running.
+2. **Voice**: in Terminal run
+   `tts-server --model_name tts_models/multilingual/multi-dataset/xtts_v2`
+   and leave that window open.
+3. In your `.env` file add these two lines:
+```
+IMAGE_PROVIDER=drawthings
+TTS_PROVIDER=xtts
+```
+4. In `my_episode.json`, set each character's `"voice"` to an XTTS voice name
+   like `"Damien Black"` (male) or `"Claribel Dervla"` (female) — or a path to
+   a short `.wav` recording of any voice to imitate it.
+5. **Greek episodes**: add `"language": "el"` to `my_episode.json` — the story,
+   captions, and voice will all be in Greek.
+
+It runs slower than the paid services (your Mac does the drawing and speaking),
+but every video is 100% free.
+
 ## Optional: background music
 
 Drop any music file named **`music.mp3`** into the main project folder and it

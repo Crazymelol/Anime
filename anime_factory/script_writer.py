@@ -36,7 +36,7 @@ Format the output as a JSON object with this exact shape:
 }}
 
 Vary the camera between scenes (wide establishing, close-up, dutch angle, over-the-shoulder)
-like a storyboard artist would.
+like a storyboard artist would.{language_instruction}
 
 Each scene should be 30-45 seconds when read aloud. Total episode: {total_minutes} minutes.
 Tone: {tone}. Pacing: {pacing}."""
@@ -53,6 +53,14 @@ def build_character_briefs(characters: list[dict]) -> str:
 
 
 def build_user_prompt(episode_config: dict) -> str:
+    language = episode_config.get("language", "en")
+    language_instruction = ""
+    if language != "en":
+        language_instruction = (
+            f"\n\nWrite the episode title, hook, all dialogue, and all narration in the "
+            f"language with ISO code '{language}'. Keep scene_description, camera, and "
+            f"lighting in English (they feed an image generator)."
+        )
     return USER_PROMPT_TEMPLATE.format(
         episode_number=episode_config["episode_number"],
         total_episodes=episode_config["total_episodes"],
@@ -62,6 +70,7 @@ def build_user_prompt(episode_config: dict) -> str:
         total_minutes=episode_config["total_minutes"],
         tone=episode_config["tone"],
         pacing=episode_config["pacing"],
+        language_instruction=language_instruction,
     )
 
 

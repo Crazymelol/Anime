@@ -1,6 +1,7 @@
 """Orchestrates script -> image prompts -> images -> voiceover -> video for one episode config."""
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -27,11 +28,14 @@ def series_slug(series_title: str) -> str:
 
 
 def resolve_voice_ids(characters: list[dict]) -> list[dict]:
+    # The adam/antoni/bella presets are ElevenLabs voice IDs; for local XTTS the
+    # "voice" value is a speaker name or .wav sample path and passes through as-is.
+    use_presets = os.environ.get("TTS_PROVIDER", "elevenlabs") == "elevenlabs"
     resolved = []
     for c in characters:
         c = dict(c)
         voice = c.get("voice", "")
-        c["voice_id"] = VOICE_PRESETS.get(voice, voice)
+        c["voice_id"] = VOICE_PRESETS.get(voice, voice) if use_presets else voice
         resolved.append(c)
     return resolved
 
@@ -82,7 +86,10 @@ def run_pipeline(
 
     audio_by_scene: dict[int, list[Path]] = {}
     if not skip_audio:
-        audio_by_scene = generate_episode_audio(script["scenes"], characters, episode_dir, mock=mock)
+        audio_by_scene = generate_episode_audio(
+            script["scenes"], characters, episode_dir, mock=mock,
+            language=episode_config.get("language", "en"),
+        )
 
     # Optional music bed: explicit "music" path in the config, else music.mp3
     # next to the project if present.
