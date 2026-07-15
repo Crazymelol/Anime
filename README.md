@@ -61,6 +61,22 @@ Output is written to `output/<series_slug>/episode_<n>/`:
 - `episode.mp4` — the assembled short
 - `manifest.json` — summary of what was generated
 
+## Free script writing with OpenRouter
+
+The script stage works with any OpenAI-compatible endpoint. To use OpenRouter's
+free models (writes the episode for $0 — quality is below Claude/GPT-4o but fine
+for testing), set in `.env`:
+
+```
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-or-...
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=meta-llama/llama-3.3-70b-instruct:free
+```
+
+Note this only covers the writing stage — images (Stability) and voice
+(ElevenLabs) are separate services with their own keys.
+
 ## Episode config format
 
 See `examples/shadow_protocol_ep3.json`. Each character needs a `name`, `role`,
