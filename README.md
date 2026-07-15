@@ -61,12 +61,12 @@ Output is written to `output/<series_slug>/episode_<n>/`:
 - `episode.mp4` — the assembled short
 - `manifest.json` — summary of what was generated
 
-## Free script writing with OpenRouter
+## Free script writing (OpenRouter / NVIDIA NIM)
 
-The script stage works with any OpenAI-compatible endpoint. To use OpenRouter's
-free models (writes the episode for $0 — quality is below Claude/GPT-4o but fine
-for testing), set in `.env`:
+The script stage works with any OpenAI-compatible endpoint, so free options
+plug straight in via `.env` — no code changes:
 
+**OpenRouter** (free-tier models, key from openrouter.ai):
 ```
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-or-...
@@ -74,8 +74,17 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_MODEL=meta-llama/llama-3.3-70b-instruct:free
 ```
 
-Note this only covers the writing stage — images (Stability) and voice
-(ElevenLabs) are separate services with their own keys.
+**NVIDIA NIM** (free developer credits, key from build.nvidia.com):
+```
+LLM_PROVIDER=openai
+OPENAI_API_KEY=nvapi-...
+OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
+OPENAI_MODEL=meta/llama-3.3-70b-instruct
+```
+
+Free models write weaker scripts than Claude/GPT-4o — good for testing the
+plumbing, less good for episodes you publish. This covers only the writing
+stage; images (Stability) and voice (ElevenLabs) are separate services.
 
 ## Episode config format
 
